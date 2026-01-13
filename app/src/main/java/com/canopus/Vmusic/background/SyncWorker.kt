@@ -13,7 +13,7 @@ import timber.log.Timber
 class SyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    
+
     private val syncCoordinator: SyncCoordinator,
     private val tokenManager: TokenManager
 ) : CoroutineWorker(context, params) {
@@ -32,14 +32,14 @@ class SyncWorker @AssistedInject constructor(
         }
 
         return try {
-            
+
             val success = syncCoordinator.run()
 
             if (success) {
                 Timber.i("$TAG: Synchronization work completed successfully.")
                 Result.success()
             } else {
-                
+
                 Timber.w("$TAG: SyncCoordinator reported failure on attempt $runAttemptCount.")
                 if (runAttemptCount < MAX_RUN_ATTEMPTS) {
                     Timber.w("$TAG: Scheduling a retry.")

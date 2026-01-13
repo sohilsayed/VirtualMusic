@@ -23,7 +23,7 @@ class MetadataWriter @Inject constructor() {
     private val tag = "MetadataWriter"
 
     init {
-        
+
         TagOptionSingleton.getInstance().isPadNumbers = false
     }
 

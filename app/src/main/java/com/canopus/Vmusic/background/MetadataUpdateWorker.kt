@@ -1,5 +1,3 @@
-
-
 package com.canopus.Vmusic.background
 
 import android.content.Context
@@ -30,7 +28,7 @@ class MetadataUpdateWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
-        
+
         const val KEY_ITEM_ID = "ITEM_ID"
         const val KEY_FILE_URI = "FILE_URI"
         const val KEY_SONG_TITLE = "SONG_TITLE"
@@ -56,17 +54,17 @@ class MetadataUpdateWorker @AssistedInject constructor(
             val originalUri = fileUriString.toUri()
             Timber.d("$TAG: Starting metadata update for $itemId at URI: $originalUri")
 
-            
+
             context.contentResolver.openInputStream(originalUri)?.use { input ->
                 tempFile.outputStream().use { output ->
                     input.copyTo(output)
                 }
             } ?: throw IOException("Could not open input stream for original file.")
 
-            
+
             val artworkBytes = fetchArtwork(artworkUri)
 
-            
+
             val audioFile = AudioFileIO.read(tempFile)
             val tag = audioFile.tagOrCreateAndSetDefault
             if (songTitle != null) tag.setField(FieldKey.TITLE, songTitle)
@@ -83,7 +81,7 @@ class MetadataUpdateWorker @AssistedInject constructor(
             AudioFileIO.write(audioFile)
             Timber.d("$TAG: Successfully wrote new tags to temp file.")
 
-            
+
             context.contentResolver.openOutputStream(originalUri, "w")?.use { output ->
                 tempFile.inputStream().use { input ->
                     input.copyTo(output)

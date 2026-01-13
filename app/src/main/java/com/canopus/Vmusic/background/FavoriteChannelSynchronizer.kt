@@ -20,42 +20,46 @@ class FavoriteChannelSynchronizer @Inject constructor(
     override suspend fun synchronize(): Boolean {
         logger.startSection(name)
         try {
-            
-            
-            
+
 
             val pendingDeletes = syncRepository.getPendingDeleteItems(TYPE)
             val dirtyItems = syncRepository.getDirtyItems(TYPE)
 
-            
+
             val validDirtyItems = mutableListOf<com.canopus.Vmusic.data.db.UserInteractionEntity>()
 
             for (item in dirtyItems) {
                 val meta = syncRepository.getMetadata(item.itemId)
-                
-                
+
+
                 if (meta?.org != "External" && meta?.artistName != "External") {
                     validDirtyItems.add(item)
                 } else {
-                    
+
                     logger.info("  Skipping external channel sync for: ${meta?.title} (${item.itemId})")
                     syncRepository.markAsSynced(item.itemId, TYPE, "local_only")
                 }
             }
-            
+
 
             if (pendingDeletes.isNotEmpty() || validDirtyItems.isNotEmpty()) {
                 logger.info("Phase 1: Sending PATCH with ${pendingDeletes.size} removals, ${validDirtyItems.size} additions.")
 
                 val patchOps = mutableListOf<PatchOperation>()
                 pendingDeletes.forEach { patchOps.add(PatchOperation("remove", it.itemId)) }
-                validDirtyItems.forEach { patchOps.add(PatchOperation("add", it.itemId)) } 
+                validDirtyItems.forEach { patchOps.add(PatchOperation("add", it.itemId)) }
 
                 val response = authApiService.patchFavoriteChannels(patchOps)
 
                 if (response.isSuccessful) {
-                    if (pendingDeletes.isNotEmpty()) syncRepository.confirmBatchDeletion(pendingDeletes.map { it.itemId }, TYPE)
-                    if (validDirtyItems.isNotEmpty()) syncRepository.markBatchSynced(validDirtyItems.map { it.itemId }, TYPE)
+                    if (pendingDeletes.isNotEmpty()) syncRepository.confirmBatchDeletion(
+                        pendingDeletes.map { it.itemId },
+                        TYPE
+                    )
+                    if (validDirtyItems.isNotEmpty()) syncRepository.markBatchSynced(
+                        validDirtyItems.map { it.itemId },
+                        TYPE
+                    )
                     logger.info("  -> Upstream PATCH successful.")
                 } else {
                     logger.warning("  -> Upstream PATCH failed: ${response.code()}")
@@ -66,9 +70,9 @@ class FavoriteChannelSynchronizer @Inject constructor(
                 logger.info("Phase 1: No local changes to push.")
             }
 
-            
-            
-            
+
+
+
             logger.info("Phase 2: Fetching remote channels and reconciling...")
 
             val remoteRes = holodexApiService.getFavoriteChannels()
@@ -80,12 +84,12 @@ class FavoriteChannelSynchronizer @Inject constructor(
             val remoteIdMap = remoteChannels.associateBy { it.id }
             val localIdMap = localSynced.associateBy { it.itemId }
 
-            
+
             val newFromServer = remoteChannels.filter { !localIdMap.containsKey(it.id) }
             if (newFromServer.isNotEmpty()) logger.info("  -> Found ${newFromServer.size} new channels from server.")
 
             for (remote in newFromServer) {
-                                val meta = UnifiedMetadataEntity(
+                val meta = UnifiedMetadataEntity(
                     id = remote.id,
                     title = remote.name ?: remote.english_name ?: "Unknown Channel",
                     artistName = remote.org ?: "",
@@ -98,18 +102,28 @@ class FavoriteChannelSynchronizer @Inject constructor(
                     org = remote.org
                 )
 
-                
+
                 syncRepository.insertRemoteItem(remote.id, TYPE, remote.id, meta)
-                logger.logItemAction(LogAction.DOWNSTREAM_INSERT_LOCAL, remote.name, null, remote.id)
+                logger.logItemAction(
+                    LogAction.DOWNSTREAM_INSERT_LOCAL,
+                    remote.name,
+                    null,
+                    remote.id
+                )
             }
 
-            
+
             val deletedOnServer = localSynced.filter { !remoteIdMap.containsKey(it.itemId) }
             if (deletedOnServer.isNotEmpty()) logger.info("  -> Found ${deletedOnServer.size} channels removed on server.")
 
             for (local in deletedOnServer) {
                 syncRepository.removeRemoteItem(local.itemId, TYPE)
-                logger.logItemAction(LogAction.DOWNSTREAM_DELETE_LOCAL, local.itemId, null, local.serverId)
+                logger.logItemAction(
+                    LogAction.DOWNSTREAM_DELETE_LOCAL,
+                    local.itemId,
+                    null,
+                    local.serverId
+                )
             }
 
             logger.endSection(name, true)

@@ -20,12 +20,12 @@ class CachePruningWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             val now = System.currentTimeMillis()
-            
+
             val threshold = now - TimeUnit.HOURS.toMillis(24)
 
             Timber.i("CachePruningWorker: Pruning metadata older than $threshold")
 
-            
+
             unifiedDao.pruneOrphanedMetadata(threshold)
 
             Result.success()

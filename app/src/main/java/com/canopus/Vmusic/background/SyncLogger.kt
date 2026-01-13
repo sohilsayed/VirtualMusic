@@ -1,4 +1,3 @@
-
 package com.canopus.Vmusic.background
 
 import timber.log.Timber
@@ -6,16 +5,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 enum class LogAction {
-    
+
     UPSTREAM_DELETE_SUCCESS,
     UPSTREAM_DELETE_FAILED,
     UPSTREAM_UPSERT_SUCCESS,
     UPSTREAM_UPSERT_FAILED,
-    
+
     DOWNSTREAM_INSERT_LOCAL,
     DOWNSTREAM_DELETE_LOCAL,
     DOWNSTREAM_UPDATE_LOCAL,
-    
+
     RECONCILE_SKIP
 }
 

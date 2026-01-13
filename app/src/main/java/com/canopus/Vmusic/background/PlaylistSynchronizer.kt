@@ -1,4 +1,3 @@
-
 package com.canopus.Vmusic.background
 
 import com.canopus.Vmusic.data.db.SyncStatus
@@ -15,39 +14,56 @@ class PlaylistSynchronizer @Inject constructor(
     override suspend fun synchronize(): Boolean {
         logger.startSection(name)
         try {
-                        logger.info("Phase 1: Pushing local changes to server...")
+            logger.info("Phase 1: Pushing local changes to server...")
             repository.performUpstreamPlaylistDeletions(logger)
             repository.performUpstreamPlaylistUpserts(logger)
             logger.info("Phase 1 complete.")
 
-                        logger.info("Phase 2: Fetching remote and local states...")
+            logger.info("Phase 2: Fetching remote and local states...")
             val remotePlaylists = repository.getRemotePlaylists()
             val localPlaylists = repository.getLocalPlaylists()
             logger.info("  -> Fetched ${remotePlaylists.size} remote playlists and ${localPlaylists.size} local playlists.")
 
-                        logger.info("Phase 3: Reconciling playlist metadata...")
+            logger.info("Phase 3: Reconciling playlist metadata...")
             val remoteMap = remotePlaylists.associateBy { it.serverId }
-            val localMap = localPlaylists.filter { it.serverId != null }.associateBy { it.serverId!! }
+            val localMap =
+                localPlaylists.filter { it.serverId != null }.associateBy { it.serverId!! }
 
             val newFromServer = remotePlaylists.filter { !localMap.containsKey(it.serverId) }
             if (newFromServer.isNotEmpty()) {
                 logger.info("  Found ${newFromServer.size} new playlists from server:")
-                newFromServer.forEach { p -> logger.logItemAction(LogAction.DOWNSTREAM_INSERT_LOCAL, p.name, null, p.serverId) }
+                newFromServer.forEach { p ->
+                    logger.logItemAction(
+                        LogAction.DOWNSTREAM_INSERT_LOCAL,
+                        p.name,
+                        null,
+                        p.serverId
+                    )
+                }
                 repository.insertNewSyncedPlaylists(newFromServer)
             }
 
             val deletedOnServer = localPlaylists.filter {
-                it.serverId != null && it.syncStatus == SyncStatus.SYNCED && !remoteMap.containsKey(it.serverId)
+                it.serverId != null && it.syncStatus == SyncStatus.SYNCED && !remoteMap.containsKey(
+                    it.serverId
+                )
             }
             if (deletedOnServer.isNotEmpty()) {
                 logger.info("  Found ${deletedOnServer.size} playlists deleted on server:")
-                deletedOnServer.forEach { p -> logger.logItemAction(LogAction.DOWNSTREAM_DELETE_LOCAL, p.name, p.playlistId, p.serverId) }
+                deletedOnServer.forEach { p ->
+                    logger.logItemAction(
+                        LogAction.DOWNSTREAM_DELETE_LOCAL,
+                        p.name,
+                        p.playlistId,
+                        p.serverId
+                    )
+                }
                 repository.deleteLocalPlaylists(deletedOnServer.map { it.playlistId })
             }
             logger.info("Phase 3 complete.")
 
 
-                        logger.info("Phase 4: Reconciling song content for all user-owned playlists...")
+            logger.info("Phase 4: Reconciling song content for all user-owned playlists...")
             val finalLocalPlaylists = repository.getLocalPlaylists().filter { it.serverId != null }
 
             for (localPlaylist in finalLocalPlaylists) {
@@ -63,22 +79,24 @@ class PlaylistSynchronizer @Inject constructor(
                 if (localTimestamp != null && remoteTimestamp != null && remoteTimestamp > localTimestamp) {
                     logger.info("  -> Server is newer for playlist '${localPlaylist.name}'. Reconciling local content.")
 
-                                        val itemCountBefore = repository.getPlaylistItemCount(localPlaylist.playlistId)
-                    val localOnlyCountBefore = repository.getLocalOnlyItemCount(localPlaylist.playlistId)
+                    val itemCountBefore = repository.getPlaylistItemCount(localPlaylist.playlistId)
+                    val localOnlyCountBefore =
+                        repository.getLocalOnlyItemCount(localPlaylist.playlistId)
 
                     Timber.tag("SYNC_DEBUG").i(
                         "BEFORE sync: Playlist '${localPlaylist.name}' has $itemCountBefore total items, $localOnlyCountBefore local-only"
                     )
 
-                    
-                    val remoteContent = repository.getRemotePlaylistContent(remotePlaylist.serverId!!)
 
-                    
-                    
+                    val remoteContent =
+                        repository.getRemotePlaylistContent(remotePlaylist.serverId!!)
+
+
+
                     repository.reconcileLocalPlaylistItems(localPlaylist.playlistId, remoteContent)
 
-                    
-                    
+
+
                     repository.updateLocalPlaylistMetadata(localPlaylist.playlistId, remotePlaylist)
 
                     logger.info("    -> Reconciled local content with ${remoteContent.size} server items.")

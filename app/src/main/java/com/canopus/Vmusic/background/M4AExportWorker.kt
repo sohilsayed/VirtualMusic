@@ -1,4 +1,3 @@
-
 package com.canopus.Vmusic.background
 
 import android.content.ContentValues
@@ -49,11 +48,11 @@ class M4AExportWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     @DownloadCache private val downloadCache: SimpleCache,
     private val unifiedDao: UnifiedDao,
-    private val metadataWriter: MetadataWriter 
+    private val metadataWriter: MetadataWriter
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
-        
+
         const val KEY_ITEM_ID = "ITEM_ID"
         const val KEY_ORIGINAL_URI = "ORIGINAL_URI"
         const val KEY_SONG_TITLE = "SONG_TITLE"
@@ -96,7 +95,7 @@ class M4AExportWorker @AssistedInject constructor(
         Timber.d("$TAG: Starting export for item: $itemId, filename: $finalFileName")
 
         try {
-            
+
             val mediaItem = MediaItem.Builder()
                 .setUri(originalUriString.toUri())
                 .setClippingConfiguration(
@@ -115,7 +114,7 @@ class M4AExportWorker @AssistedInject constructor(
             if (exportResult.exportException != null) throw exportResult.exportException!!
             Timber.d("$TAG: Transformer successfully created temp file: ${tempOutputFile.absolutePath}")
 
-            
+
             metadataWriter.writeMetadata(
                 context = context,
                 targetFile = tempOutputFile,
@@ -129,12 +128,10 @@ class M4AExportWorker @AssistedInject constructor(
             Timber.d("$TAG: MetadataWriter successfully wrote tags to temp file.")
 
 
-            
-
             val finalUri = exportToMediaStore(tempOutputFile, finalFileName)
                 ?: throw IOException("Failed to export temp file to MediaStore.")
 
-            
+
             unifiedDao.completeDownload(itemId, finalUri.toString())
             downloadCache.removeResource(itemId)
             tempOutputFile.delete()
@@ -199,7 +196,6 @@ class M4AExportWorker @AssistedInject constructor(
             transformer.start(mediaItem, outputPath)
         }
     }
-
 
 
     private fun exportToMediaStore(sourceFile: File, finalFileName: String): Uri? {

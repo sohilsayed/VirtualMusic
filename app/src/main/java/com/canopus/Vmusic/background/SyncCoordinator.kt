@@ -1,4 +1,3 @@
-
 package com.canopus.Vmusic.background
 
 import kotlinx.coroutines.async
@@ -19,8 +18,8 @@ class SyncCoordinator @Inject constructor(
             coroutineScope {
                 val results = synchronizers.map { synchronizer ->
                     async {
-                        
-                        
+
+
                         synchronizer.synchronize()
                     }
                 }.map { it.await() }
