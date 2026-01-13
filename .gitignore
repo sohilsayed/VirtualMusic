@@ -1,0 +1,41 @@
+# --- Android Studio / IntelliJ Junk ---
+*.iml
+.gradle
+/local.properties
+/.idea
+/.kotlin
+*.ipr
+*.iws
+
+# --- Build Output ---
+/*/build
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# --- OS Junk ---
+.DS_Store
+Thumbs.db
+
+# --- Sensitive Security Files (CRITICAL) ---
+# Never commit your signing keys!
+*.jks
+*.keystore
+*.p12
+*.google-services.json
+
+# --- Compiled Binaries ---
+*.apk
+*.aar
+*.jar
+*.bundle
+
+# --- Room / DB Schemas (Optional) ---
+# If you want to keep Room's auto-generated schemas out of GitHub
+/app/schemas
+
+# --- Backup / Temp files ---
+*.bak
+*.swp
+*~
